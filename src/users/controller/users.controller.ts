@@ -6,10 +6,15 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Query,
+  Request,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/guard/auth.guard';
 import { UserDto } from '../dto/create-user.dto';
 import { UsersService } from '../service/users.service';
 
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -20,8 +25,13 @@ export class UsersController {
   }
 
   @Get()
-  findAllUsers() {
+  findAllUsers(@Request() request: { user: { userId: string } }) {
     return this.usersService.findAllUsers();
+  }
+
+  @Get('by-query')
+  findUserByQuery(@Query() query: any) {
+    return this.usersService.findUsersByQuery(query);
   }
 
   @Get(':id')

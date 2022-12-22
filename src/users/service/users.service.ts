@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserDto } from '../dto/create-user.dto';
 import { User, UserDocument } from '../schemas/user.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -10,11 +11,14 @@ export class UsersService {
     @InjectModel(User.name) private userMoldel: Model<UserDocument>,
   ) {}
   async createUser(user: UserDto) {
+    const salt = bcrypt.genSaltSync(10);
+    user.password = await bcrypt.hash(user.password, salt);
     const userCreated = await this.userMoldel.create(user);
     return userCreated;
   }
 
   async findAllUsers() {
+    console.log('buscando usuasrios: ', process.env.URI);
     const users = await this.userMoldel.find();
     return users;
   }
@@ -32,5 +36,15 @@ export class UsersService {
   async deleteUser(id: string) {
     const userDeleted = await this.userMoldel.findByIdAndDelete(id);
     return userDeleted;
+  }
+
+  async findUsersByQuery(query: any) {
+    const user = await this.userMoldel.find(query);
+    return user;
+  }
+
+  async findOneUserByQuery(query: any) {
+    const user = await this.userMoldel.findOne(query);
+    return user;
   }
 }
