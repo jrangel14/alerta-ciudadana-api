@@ -10,7 +10,7 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/guard/auth.guard';
+import { JwtAuthGuard } from '../../guard/auth.guard';
 import { UserDto } from '../dto/create-user.dto';
 import { UsersService } from '../service/users.service';
 
