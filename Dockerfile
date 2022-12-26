@@ -1,35 +1,43 @@
-# Initiate a container to build the application in.
-FROM node:14-alpine as builder
-ENV NODE_ENV=build
-WORKDIR /usr/src/app
+# Vamos a tomar la imagen de node versión 16 como base
+FROM node:16 as install
+LABEL stage=install
 
-# Copy the package.json into the container.
-COPY package*.json ./
+# Debemos de establecer el directorio de trabajo
+WORKDIR /src/install
 
-# Install the dependencies required to build the application.
+# Vamos a copiar los archivos de npm para instalar las dependencias
+COPY package.json .
+COPY package-lock.json .
+
+# Instalamos las dependencias...
 RUN npm install
 
-# Copy the application source into the container.
+# En un siguiente paso vamos a compilar la aplicación.
+# Usamos la misma imagen como base.
+FROM node:16 as compile
+LABEL stage=compile
+
+# Establecemos el directorio de trabajo.
+WORKDIR /src/build
+
+# Copiamos los archivos del paso anterior.
+COPY --from=install /src/install .
+# y copiamos los archivos restantes del proyecto.
 COPY . .
 
-# Build the application.
+# Compilamos e instalamos dependencias en modo producción.
 RUN npm run build
+RUN npm install --production=true
 
-# Uninstall the dependencies not required to run the built application.
-RUN npm prune --production
+# Por último, usaremos la versión alpine
+FROM node:16-alpine as deploy
 
-# Initiate a new container to run the application in.
-FROM node:14-alpine
-  ENV NODE_ENV=production
-WORKDIR /usr/src/app
+# Establecemos el directorio donde vivirá nuestra app
+WORKDIR /app
 
-# Copy everything required to run the built application into the new container.
-COPY --from=builder /usr/src/app/package*.json ./
-COPY --from=builder /usr/src/app/node_modules/ ./node_modules/
-COPY --from=builder /usr/src/app/dist/ ./dist/
+# Copiamos los node_modules y nuestro archivo main.js
+COPY --from=compile /src/build/dist/main.js index.js
+COPY --from=compile /src/build/node_modules node_modules
 
-# Expose the web server's port.
-EXPOSE 3000
-
-# Run the application.
-CMD ["node", "dist/main"]
+# Y listo, ejecutamos la aplicación.
+ENTRYPOINT node .
