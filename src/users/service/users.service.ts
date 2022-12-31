@@ -18,7 +18,6 @@ export class UsersService {
   }
 
   async findAllUsers() {
-    console.log('buscando usuasrios: ', process.env.URI);
     const users = await this.userMoldel.find();
     return users;
   }

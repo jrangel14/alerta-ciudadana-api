@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/service/users.service';
 import * as bcrypt from 'bcrypt';
-import { HttpStatus } from '@nestjs/common';
+import { GENERIC_RESPONSES } from '../../general/constants';
 
 @Injectable()
 export class AuthService {
@@ -11,36 +11,24 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(user: { email: string; password: string }): Promise<{
-    code: HttpStatus;
-    message: string;
-    data?: any;
-  }> {
-    const userSearch = await this.usersService.findOneUserByQuery({
-      email: user.email,
+  async login(userLogin: { email: string; password: string }) {
+    const user = await this.usersService.findOneUserByQuery({
+      email: userLogin.email,
+      active: true,
     });
-    console.log(userSearch);
-    if (!userSearch)
-      return {
-        code: HttpStatus.NOT_FOUND,
-        message: 'Usuario no encontrado',
-      };
-    const { password } = userSearch;
-    const passwordIsValid = bcrypt.compareSync(user.password, password);
-    if (!passwordIsValid)
-      return {
-        code: HttpStatus.BAD_REQUEST,
-        message: 'Credenciales no validas',
-      };
 
-    const payload = { email: userSearch.email, sub: userSearch.id };
+    if (!user) return GENERIC_RESPONSES.INVALID_DATA('credenciales invalidas');
 
-    return {
-      code: HttpStatus.OK,
-      message: 'Inicio de sesion exitoso',
-      data: {
-        token: this.jwtService.sign(payload),
-      },
-    };
+    const { password, ...userResponse } = user.toObject();
+
+    if (!bcrypt.compareSync(userLogin.password, password))
+      return GENERIC_RESPONSES.INVALID_DATA('credenciales invalidas');
+
+    const payload = { email: user.email, userId: user.id };
+
+    return GENERIC_RESPONSES.SUCCES('Inicio exitoso', {
+      token: this.jwtService.sign(payload),
+      user: userResponse,
+    });
   }
 }

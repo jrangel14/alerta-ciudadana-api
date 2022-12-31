@@ -25,7 +25,7 @@ export class UsersController {
   }
 
   @Get()
-  findAllUsers(@Request() request: { user: { userId: string } }) {
+  findAllUsers() {
     return this.usersService.findAllUsers();
   }
 
